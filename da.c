@@ -48,14 +48,15 @@ void disassemble(char *str, unsigned int inst)
 
 	char			*f1_inst[] = {"ADD", "ADC", "SUB", "SUC", "LSL", "LSR", "RSB", "RSC", "AND", "OR", "XOR", "NOT", "MIN", "MAX", "CLR", "SET"};
 	char			*f2_inst[] = {
-				"JMP", "JAL", "LDI", "LMBD", "SCAN", "HALT",
-				"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", 
+				"JMP", "JAL", "LDI", "LMBD", "SCAN", "HALT", "FILL", "ZERO", 
+				"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", 
 				"SLP"
 				};
 	char			*f4_inst[] = {"xx", "LT", "EQ", "LE", "GT", "NE", "GE", "A"};
 	char			*f5_inst[] = {"xx", "BC", "BS", "xx"};
 	char			*f6_7_inst[] = {"SBBO", "LBBO"};
 	char			*f6_4_inst[] = {"SBCO", "LBCO"};
+	char			*fx_inst[] = {"XIN", "XOUT", "XCHG"};
 	char			*sis[] = {".b0", ".b1", ".b2", ".b3", ".w0", ".w1", ".w2", ""};
 	char			*bytenum[] = {"", ".b1", ".b2", ".b3"};
 
@@ -128,6 +129,7 @@ void disassemble(char *str, unsigned int inst)
 
 					break;
 
+
 				case 4:  // SCAN
 					IO = (inst & 0x01000000) >> 24;
 					RdSel = (inst & 0x000000E0) >> 5;
@@ -148,6 +150,24 @@ void disassemble(char *str, unsigned int inst)
 					sprintf(str, "%s", f2_inst[SUBOP]);
 					break;
 
+
+				case 7: // XIN, XOUT, XCHG, ZERO, FILL
+					// XIN is 0x5D<<23, XOUT 0x5E<<23 and XCHG 0x5F<<23, according to Pasm source
+					IO = (inst & 0x01800000) >> 23; // XIN gives 0b01, XOUT 0b10, XCHG 0b11
+					IO--; // Line up with struct
+					Rd = (inst & 0x0000001F);
+					RdSel = (inst & 0x00000060) >> 5;
+					// Note: Pasm source incorrectly lists the first argument as IM(511), which should be IM(253), as it is only 8 bits
+					unsigned Imm = (inst >> 15) & 0x000000FF;
+					Imm2 = ((inst >> 7) & 0x0000007F);
+					if ( Imm2 >= 124){
+						Imm2 -= 124;
+						sprintf(str, "%s 0x%04X, &R%u.b%u, b%u", fx_inst[IO], Imm, Rd, RdSel, Imm2);
+					} else { 
+						Imm2++;
+						sprintf(str, "%s 0x%04X, &R%u.b%u, 0x%04X", fx_inst[IO], Imm, Rd, RdSel, Imm2);
+					}
+					break;
 				case 15:  // SLP
 					Imm = (inst & 0x00800000) >> 23;
 					sprintf(str, "%s %u", f2_inst[SUBOP], Imm);
