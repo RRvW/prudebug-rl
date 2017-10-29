@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -16,40 +17,20 @@
 #include <errno.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #include "prudbg.h"
 
 int cmd_input(char *prompt, char *cmd, char *cmdargs, unsigned int *argptrs, unsigned int *numargs)
 {
 	unsigned int		i, j, full_len, on_zero;
-	char			c, last_char;
-	char			buf[MAX_COMMAND_LINE];
 
-	// print prompt
-	printf("%s", prompt);
-
-	// collect command until space or return
-	i = 0;
-	do {
-		c = getchar();
-
-		// check for backspace
-		if (c == 0x08 || c == 0x7F) {
-			if (i != 0) {
-				putchar(0x08);
-				putchar(' ');
-				putchar(0x08);
-				i--;
-			}
-		// just a normal character
-		} else {
-			buf[i] = c;
-			printf("%c", buf[i]);
-			if (i < (MAX_COMMAND_LINE - 1)) i++;
-		}
-		
-	} while (c != '\n');
-	buf[i-1] = 0;
+	rl_prep_terminal(0);
+	rl_tty_set_echoing(1);
+	char * buf = readline(prompt);
+	add_history(buf);
+	rl_deprep_terminal();
 
 	// replace spaces and return with zeros
 	full_len = strlen(buf);
@@ -72,6 +53,7 @@ int cmd_input(char *prompt, char *cmd, char *cmdargs, unsigned int *argptrs, uns
 
 	for (i=0; i<full_len+1; i++) cmdargs[i] = buf[i];
 
+	free(buf);
 	return 0;
 }
 
