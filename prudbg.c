@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -138,6 +139,8 @@ int main(int argc, char *argv[])
 	struct termios		oldT, newT;
 	unsigned int		i;
 	unsigned int		addr, len, bpnum, offset, wanum, value;
+	unsigned int		last_addr = 0;
+	char 			last_load_file[MAX_CMDARGS_LEN] = {0};
 	int			opt;
 	unsigned long		opt_pruss_addr;
 	int			pru_access_mode, pi, pitemp;
@@ -288,6 +291,7 @@ int main(int argc, char *argv[])
 	newT.c_lflag &= ~ICANON;
 	ioctl(0,TCSETS,&newT);
 
+	
 
 	// Command prompt handler
 	do {
@@ -438,10 +442,18 @@ int main(int argc, char *argv[])
 
 		else if (!strcmp(cmd, "L")) {					// L - Load PRU program
 			last_cmd = LAST_CMD_NONE;
-			if (numargs != 2) {
+			if (numargs == 0){
+				if( last_load_file[0] == '\0'){
+					printf("ERROR: Cannot repeat last load\n");
+				} else {
+					cmd_loadprog(last_addr, last_load_file);
+				}
+			}
+			else if (numargs != 2) {
 				printf("ERROR: incorrect number of arguments\n");
 			} else {
 				addr = strtol(&cmdargs[argptrs[0]], NULL, 0);
+				strcpy(last_load_file, &cmdargs[argptrs[1]]);
 				cmd_loadprog(addr, &cmdargs[argptrs[1]]);
 			}
 		}
