@@ -94,11 +94,6 @@ extern struct watchvariable	wa[MAX_NUM_OF_PRUS][MAX_WATCH];
 
 // function prototypes
 int cmd_input(char *prompt, char *cmd, char *cmdargs, unsigned int *argptrs, unsigned int *numargs);
-void printhelp();
-int cmd_d (int offset, int addr, int len);
-int cmd_loadprog(unsigned int addr, char *fn);
-void cmd_run();
-void cmd_soft_reset();
 void disassemble(char *str, unsigned int inst);
 
 #endif // PRUDBG_H

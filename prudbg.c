@@ -20,6 +20,8 @@
 
 #include "prudbg.h"
 #include "uio.h"
+#include "cmd.h"
+#include "printhelp.h"
 
 
 // global variable definitions
