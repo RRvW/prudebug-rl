@@ -41,14 +41,14 @@ void GetBurstLen(char *tempstr, unsigned int BurstLen)
 void disassemble(char *str, unsigned int inst)
 {
 	unsigned short		Imm;
-	unsigned char		OP, ALUOP, Rs2Sel, Rs2, Rs1Sel, Rs1, RdSel, Rd, IO, Imm2, SUBOP, Test;
+	unsigned char		OP, ALUOP, Rs2Sel, Rs2, Rs1Sel, Rs1, RdSel, Rd, RdMod, IO, Imm2, SUBOP, Test;
 	unsigned char		LoadStore, BurstLen, RxByteAddr, Rx, Ro, RoSel, Rb;
 	short			BrOff;
 	char			tempstr[50];
 
 	char			*f1_inst[] = {"ADD", "ADC", "SUB", "SUC", "LSL", "LSR", "RSB", "RSC", "AND", "OR", "XOR", "NOT", "MIN", "MAX", "CLR", "SET"};
 	char			*f2_inst[] = {
-				"JMP", "JAL", "LDI", "LMBD", "SCAN", "HALT", "FILL", "ZERO", 
+				"JMP", "JAL", "LDI", "LMBD", "SCAN", "HALT", "MVI", "XFR", 
 				"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", 
 				"SLP"
 				};
@@ -59,6 +59,8 @@ void disassemble(char *str, unsigned int inst)
 	char			*fx_inst[] = {"XIN", "XOUT", "XCHG"};
 	char			*sis[] = {".b0", ".b1", ".b2", ".b3", ".w0", ".w1", ".w2", ""};
 	char			*bytenum[] = {"", ".b1", ".b2", ".b3"};
+	char	 		 fmvi_type[] = {'B', 'W', 'D'};
+	char 			*fmvi_reg[] = {"R%u%s", "*R%u%s", "*R%u%s++", "*--R%u%s"}; //MVI printf format for instructions
 
 	OP = (inst & 0xE0000000) >> 29;
 
@@ -150,6 +152,19 @@ void disassemble(char *str, unsigned int inst)
 					sprintf(str, "%s", f2_inst[SUBOP]);
 					break;
 
+				case 6: //MVI
+					Rd     = (inst & 0x0000001F);
+					RdSel  = (inst & 0x000000E0) >> 5;
+					Rs1    = (inst & 0x00001F00) >> 8;
+					Rs1Sel = (inst & 0x0000E000) >> 13;
+					IO     = (inst & 0x00030000) >> 16; //0: MVIB, 1: MVIW, 2:MVID
+					RdMod  = (inst & 0x01E00000) >> 21;  
+					// Itype bits 0 and 1 apply to the second argument, 2 en 3 to first
+					// for each bit pair: 0b01: Ptr, 0b10: Ptr, postincrement, 0b11: Ptr, Predecrement
+					// TODO: Fix postinc, predec
+					sprintf( tempstr, "%%s%%c %s %s", fmvi_reg[(RdMod&0x0C)>>2], fmvi_reg[RdMod&0x03]);
+					sprintf( str, tempstr, f2_inst[SUBOP], fmvi_type[IO], Rd, sis[RdSel], Rs1, sis[Rs2Sel]);
+					break;
 
 				case 7: // XIN, XOUT, XCHG, ZERO, FILL
 					// XIN is 0x5D<<23, XOUT 0x5E<<23 and XCHG 0x5F<<23, according to Pasm source
@@ -158,7 +173,7 @@ void disassemble(char *str, unsigned int inst)
 					Rd = (inst & 0x0000001F);
 					RdSel = (inst & 0x00000060) >> 5;
 					// Note: Pasm source incorrectly lists the first argument as IM(511), which should be IM(253), as it is only 8 bits
-					unsigned Imm = (inst >> 15) & 0x000000FF;
+					Imm = (inst >> 15) & 0x000000FF;
 					Imm2 = ((inst >> 7) & 0x0000007F);
 					if ( Imm2 >= 124){
 						Imm2 -= 124;
