@@ -5,7 +5,7 @@ CFLAGS=-O -g -lreadline
 objs = prudbg.o cmdinput.o cmd.o printhelp.o da.o uio.o
 
 prudebug : ${objs}
-	${CC} ${CFLAGS}  ${objs} -o prudebug
+	${CC} ${objs} -o prudebug ${CFLAGS}
 
 clean:
 	rm -f ${objs} prudebug
