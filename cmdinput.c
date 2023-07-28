@@ -26,6 +26,10 @@ int cmd_input(char *prompt, char *cmd, char *cmdargs, unsigned int *argptrs, uns
 {
 	unsigned int		i, j, full_len, on_zero;
 
+
+	rl_instream = stdin;
+	rl_outstream = stdout;
+
 	rl_prep_terminal(0);
 	rl_tty_set_echoing(1);
 	char * buf = readline(prompt);
